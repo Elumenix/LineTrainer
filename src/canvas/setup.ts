@@ -1,11 +1,4 @@
-// @ts-check
-// The typescript checking is mainly so that I get proper quick suggestions, but it also makes things correct, which is cool
-
-/**
- * @param {HTMLCanvasElement} canvas
- * @param {() => void} callback
- */
-export const setupCanvas = (canvas, callback) => {
+export const setupCanvas = (canvas: HTMLCanvasElement, callback: () => void) => {
     const ctx = canvas.getContext("2d");
     if (!ctx) throw new Error("2D canvas context is not available");
     const view = { ctx, w: 0, h: 0, dpr: 1 };

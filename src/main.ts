@@ -1,8 +1,7 @@
-import { setupCanvas } from "./canvas/setup.js";
-import { render } from "./canvas/renderer.js"; 
+import { setupCanvas } from "./canvas/setup";
+import { render } from "./canvas/renderer"; 
 
-/** @type {HTMLCanvasElement} */
-const canvas = document.getElementById("vectorCanvas");
+const canvas = document.getElementById("vectorCanvas") as HTMLCanvasElement;
 
 
 

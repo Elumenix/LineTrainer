@@ -1,9 +1,11 @@
-// @ts-check
+interface View {
+    ctx: CanvasRenderingContext2D;
+    w: number;
+    h: number;
+    dpr: number;
+}
 
-/**
- * @param {{ ctx: CanvasRenderingContext2D, w: number, h: number, dpr: number }} view
- */
-const drawAxes = (view) => {
+const drawAxes = (view: View) => {
     const { ctx, w, h, dpr } = view;
 
     ctx.clearRect(0, 0, w, h);
@@ -25,10 +27,7 @@ const drawAxes = (view) => {
     ctx.stroke();
 }
 
-/**
- * @param {{ ctx: CanvasRenderingContext2D, w: number, h: number, dpr: number }} view
- */
-export const render = (view) => {
+export const render = (view: View) => {
     // This is all currently
     drawAxes(view);
 }
