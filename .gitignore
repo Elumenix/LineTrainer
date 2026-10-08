@@ -166,3 +166,5 @@ vite.config.ts.timestamp-*
 
 # Turbo Repo
 .turbo
+
+.vscode
