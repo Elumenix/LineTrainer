@@ -10,6 +10,12 @@ interface Point {
     y: number;
 }
 
+interface Line {
+    type: "line";
+    p1: Point;
+    p2: Point;
+}
+
 interface CircleConfig {
     type: "circle";
     center: Point;
@@ -41,14 +47,17 @@ const drawAxes = () => {
 
 // Todo: Color may change depending on state
 const drawCircle = (pos: Point) => {
-    drawQueue.push({
+    const circle: CircleConfig = {
         type: "circle",
         center: pos,
         radius: 3,
         color: 'blue'
-    });
+    }
 
+    drawQueue.push(circle);
     requestRender();
+
+    return circle;
 }
 
 export const drawRandomCircle = () => {
@@ -59,7 +68,18 @@ export const drawRandomCircle = () => {
         y: Math.random() * (h - 20) + 10    // 10 to h-10 (inclusive)
     }
 
-    drawCircle(circleCenter);
+    return drawCircle(circleCenter);
+}
+
+export const drawRandomLineFromCircle = (circle: CircleConfig) => {
+    // Gets random degree, then converts to radians
+    const angle = (Math.random() * 360) * 0.01745329251;
+    // Rest of line math here
+}
+
+export const clearScene = () => {
+    drawQueue.length = 0;
+    requestRender();
 }
 
 const render = () => {
@@ -94,7 +114,7 @@ export const requestRender = () => {
 }
 
 let view: View;
-let drawQueue: (CircleConfig)[] = [];
+let drawQueue: (CircleConfig | Line)[] = [];
 export const setupRenderer = (passedView: View) => {
     view = passedView;
     requestRender(); // Draw first frame
