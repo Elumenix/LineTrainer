@@ -5,7 +5,7 @@ interface View {
     dpr: number;
 }
 
-interface Point {
+export interface Point {
     x: number;
     y: number;
 }
@@ -14,6 +14,7 @@ interface Line {
     type: "line";
     p1: Point;
     p2: Point;
+    color: string;
 }
 
 interface CircleConfig {
@@ -46,7 +47,7 @@ const drawAxes = () => {
 }
 
 // Todo: Color may change depending on state
-const drawCircle = (pos: Point) => {
+export const drawCircle = (pos: Point) => {
     const circle: CircleConfig = {
         type: "circle",
         center: pos,
@@ -56,7 +57,6 @@ const drawCircle = (pos: Point) => {
 
     drawQueue.push(circle);
     requestRender();
-
     return circle;
 }
 
@@ -74,7 +74,21 @@ export const drawRandomCircle = () => {
 export const drawRandomLineFromCircle = (circle: CircleConfig) => {
     // Gets random degree, then converts to radians
     const angle = (Math.random() * 360) * 0.01745329251;
-    // Rest of line math here
+    const lineLength = (Math.random() * 50) + 10; // Range: 30 - 300
+
+    const line: Line = {
+        type: "line",
+        p1: circle.center,
+        p2: {
+            x: circle.center.x + Math.cos(angle) * lineLength,
+            y: circle.center.y + Math.sin(angle) * lineLength
+        },
+        color: "blue"
+    }
+
+    drawQueue.push(line);
+    requestRender();
+    return line;
 }
 
 export const clearScene = () => {
@@ -92,8 +106,22 @@ const render = () => {
 
             ctx.beginPath();
             ctx.arc(circle.center.x, circle.center.y, 5, 0, Math.PI * 2);
-            ctx.fillStyle = 'blue';
+            ctx.fillStyle = circle.color;
             ctx.fill();
+            continue;
+        }
+
+        if (obj.type === "line") {
+            console.log("Line path entered");
+            const line: Line = obj as Line;
+
+            ctx.strokeStyle = line.color;
+            ctx.lineWidth = 2;
+
+            ctx.beginPath();
+            ctx.moveTo(line.p1.x, line.p1.y);
+            ctx.lineTo(line.p2.x, line.p2.y);
+            ctx.stroke();
         }
     }
 }
