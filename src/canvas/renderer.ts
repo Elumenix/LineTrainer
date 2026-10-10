@@ -72,10 +72,45 @@ export const drawRandomCircle = () => {
 }
 
 export const drawRandomLineFromCircle = (circle: CircleConfig) => {
-    // Gets random degree, then converts to radians
-    const angle = (Math.random() * 360) * 0.01745329251;
-    const lineLength = (Math.random() * 50) + 10; // Range: 30 - 300
+    const { w, h } = view;
 
+    // Canvas info helpers
+    const { x: px, y: py } = circle.center;
+    const midX = w / 2;
+    const midY = h / 2;
+
+    // Essentially what quadrant the passed in circle is in
+    const startRight = px >= midX;
+    const startBottom = py >= midY;
+
+    // Required for loop
+    let isGoodAngle: boolean;
+    let angle: number;
+
+    // We want to confirm that a line extended from the circle to a full length won't end in the same quadrant
+    // That wouldn't really be helpful for learning, so we make sure it ends in a different quadrant, which means lots of math
+    do {
+        isGoodAngle = true;
+
+        // Gets random degree, then converts to radians
+        angle = (Math.random() * 360) * 0.01745329251;
+        const dx = Math.cos(angle);
+        const dy = Math.sin(angle);
+        
+        // Essentially figuring out what edge of the canvas a line of this angle, extended from the input circle, would hit first
+        // Then we can calculate that exact point 
+        const tx = dx > 0 ? (w - px) / dx : dx < 0 ? (0 - px) / dx : Infinity;
+        const ty = dy > 0 ? (h - py) / dy : dy < 0 ? (0 - py) / dy : Infinity;
+        const t = Math.min(tx, ty);
+        const hit : Point =  {x: px + t * dx, y: py + t * dy };
+
+        // If both the x and y are on the same side of the center line as the circle, then we stayed in the same quadrant
+        isGoodAngle = (hit.x >= midX) !== startRight || (hit.y >= midY) !== startBottom;
+    }
+    while (!isGoodAngle);
+
+
+    const lineLength = (Math.random() * 50) + 10; // Range: 30 - 300
     const line: Line = {
         type: "line",
         p1: circle.center,
