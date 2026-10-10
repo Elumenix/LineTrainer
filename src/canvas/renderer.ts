@@ -1,3 +1,5 @@
+import { currentState, setState } from "../state";
+
 interface View {
     ctx: CanvasRenderingContext2D;
     w: number;
@@ -14,6 +16,7 @@ interface Line {
     type: "line";
     p1: Point;
     p2: Point;
+    p3: Point;
     color: string;
 }
 
@@ -52,7 +55,7 @@ export const drawCircle = (pos: Point) => {
         type: "circle",
         center: pos,
         radius: 3,
-        color: 'blue'
+        color: currentState === "input" ? "red" : "blue"
     }
 
     drawQueue.push(circle);
@@ -86,6 +89,7 @@ export const drawRandomLineFromCircle = (circle: CircleConfig) => {
     // Required for loop
     let isGoodAngle: boolean;
     let angle: number;
+    let hit: Point;
 
     // We want to confirm that a line extended from the circle to a full length won't end in the same quadrant
     // That wouldn't really be helpful for learning, so we make sure it ends in a different quadrant, which means lots of math
@@ -102,7 +106,7 @@ export const drawRandomLineFromCircle = (circle: CircleConfig) => {
         const tx = dx > 0 ? (w - px) / dx : dx < 0 ? (0 - px) / dx : Infinity;
         const ty = dy > 0 ? (h - py) / dy : dy < 0 ? (0 - py) / dy : Infinity;
         const t = Math.min(tx, ty);
-        const hit : Point =  {x: px + t * dx, y: py + t * dy };
+        hit =  {x: px + t * dx, y: py + t * dy };
 
         // If both the x and y are on the same side of the center line as the circle, then we stayed in the same quadrant
         isGoodAngle = (hit.x >= midX) !== startRight || (hit.y >= midY) !== startBottom;
@@ -118,6 +122,7 @@ export const drawRandomLineFromCircle = (circle: CircleConfig) => {
             x: circle.center.x + Math.cos(angle) * lineLength,
             y: circle.center.y + Math.sin(angle) * lineLength
         },
+        p3: hit,
         color: "blue"
     }
 
@@ -128,6 +133,7 @@ export const drawRandomLineFromCircle = (circle: CircleConfig) => {
 
 export const clearScene = () => {
     drawQueue.length = 0;
+    setState("start");
     requestRender();
 }
 
@@ -155,7 +161,12 @@ const render = () => {
 
             ctx.beginPath();
             ctx.moveTo(line.p1.x, line.p1.y);
-            ctx.lineTo(line.p2.x, line.p2.y);
+            if (currentState === "result") {
+                ctx.lineTo(line.p3.x, line.p3.y);
+            }
+            else {
+                ctx.lineTo(line.p2.x, line.p2.y);
+            }
             ctx.stroke();
         }
     }
