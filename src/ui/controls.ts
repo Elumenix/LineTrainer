@@ -1,6 +1,6 @@
 // Will handle html elements on the page, such as buttons and checkboxes
-import { drawRandomCircle, drawRandomLineFromCircle, clearScene } from "../canvas/renderer";
-import { currentState, setState } from "../state";
+import { drawRandomLine, clearScene } from "../canvas/renderer";
+import { setState } from "../state";
 
 export const initUI = (callback: (canvas: HTMLCanvasElement) => void) => {
     const canvas = document.getElementById("vectorCanvas") as HTMLCanvasElement;
@@ -11,8 +11,7 @@ export const initUI = (callback: (canvas: HTMLCanvasElement) => void) => {
         
         // Clicking the button always results in having on circle on the screen and moving to await input
         clearScene();
-        const circle = drawRandomCircle();
-        drawRandomLineFromCircle(circle);
+        drawRandomLine();
 
         setState("input");
     });
