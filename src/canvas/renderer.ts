@@ -77,6 +77,31 @@ const createCircle = (pos: Point): CircleConfig => {
     return circle;
 }
 
+export const createLine = (startLocation: Point | CircleConfig, angle?: number, length?: number): LineConfig => {
+    const { w, h } = view;
+    const startPoint: Point = "type" in startLocation ? startLocation.center : startLocation;
+
+    // Helpers
+    const { x: px, y: py } = startPoint;
+    const dx = Math.cos(angle ?? 0);
+    const dy = Math.sin(angle ?? 0);
+    const lineLength = length ?? 30; // Default length is 30
+
+
+    // Essentially figuring out what edge of the canvas this line would hit if fully extended
+    // Then we can calculate that exact point, so we can reuse it later in the output
+    const tx = dx > 0 ? (w - px) / dx : dx < 0 ? (0 - px) / dx : Infinity;
+    const ty = dy > 0 ? (h - py) / dy : dy < 0 ? (0 - py) / dy : Infinity;
+    const t = Math.min(tx, ty);
+
+    return {
+        type: "line",
+        p1: startPoint,
+        p2: { x: px + dx * lineLength, y: py + dy * lineLength },
+        p3: { x: px + t * dx, y: py + t * dy }
+    };
+}
+
 const createRandomLine = (startLocation: Point | CircleConfig): LineConfig => {
     const { w, h } = view;
     const startPoint: Point = "type" in startLocation ? startLocation.center : startLocation;
@@ -140,7 +165,14 @@ const createRandomLine = (startLocation: Point | CircleConfig): LineConfig => {
 
 
 // Draw Request Functions
-export const drawCircle = (pos: Point) => {
+export const drawCircle = (
+    ...args: [pos: Point] | [x: number, y: number]
+): CircleConfig => {
+    // We're allowing Point of (x,y) as input so we gotta parse that
+    const pos: Point =
+        typeof args[0] === "number"
+            ? { x: args[0], y: args[1] } as Point
+            : args[0] as Point;
 
     const circle: CircleConfig = createCircle(pos);
     drawQueue.push(circle);
@@ -152,6 +184,14 @@ export const drawRandomCircle = () => {
     return drawCircle(getRandomSafeCanvasPoint());
 }
 
+export const drawLine = (startLocation: Point | CircleConfig, angle: number, length: number) => {
+
+    const line = createLine(startLocation, angle, length);
+    drawQueue.push(line);
+    requestRender();
+    return line;
+}
+
 export const drawRandomLine = (startLocation?: Point | CircleConfig) => {
 
     // If no point is given, we'll take a random safe one
@@ -160,6 +200,97 @@ export const drawRandomLine = (startLocation?: Point | CircleConfig) => {
     requestRender();
     return line;
 }
+
+/*export const drawRandomBoxY = () => {
+    const boxCenter = getRandomSafeCanvasPoint();
+
+    const angle1 = Math.random() * 180;
+    const angle2 = Math.random() * (270 - 90 - angle1) + angle1 + 90;
+    const angle3 = Math.random() * (360 - 90 - angle2 - (angle1 < 90 ? (90 - angle1) : 0)) + angle2 + 90;
+
+}*/
+
+type DrawRandomBoxYResult = {
+    run: number;
+    centerX: number;
+    centerY: number;
+    angle1: number;
+    angle2: number;
+    angle3: number;
+};
+
+
+type Angles = {
+    angle1: number;
+    angle2: number;
+    angle3: number;
+};
+
+/*export const generateAngles = (): Angles => {
+    // Split the remaining 90 degrees randomly among the three gaps.
+    const cuts = [
+        Math.random() * 90,
+        Math.random() * 90
+    ].sort((a, b) => a - b);
+
+    const extraGaps = [
+        cuts[0],
+        cuts[1]! - cuts[0]!,
+        90 - cuts[1]!
+    ];
+
+    const gaps = extraGaps.map(gap => gap! + 90);
+
+    // Randomly rotate the entire configuration.
+    const start = Math.random() * 360;
+
+    return {
+        angle1: start,
+        angle2: (start + gaps[0]!) % 360,
+        angle3: (start + gaps[0]! + gaps[1]!) % 360
+    };
+};*/
+
+
+export const generateAngles = (): Angles => {
+    // Generate three positive random weights.
+    // Each weight is the sum of two exponential random variables.
+    const randomWeight = (): number =>
+        -Math.log(Math.random()) - Math.log(Math.random());
+
+    const weights = [
+        randomWeight(),
+        randomWeight(),
+        randomWeight()
+    ];
+
+    const total = weights.reduce((sum, weight) => sum + weight, 0);
+
+    // Distribute the extra 90 degrees proportionally.
+    const gaps = weights.map(
+        weight => 90 + (90 * weight) / total
+    );
+
+    // Randomly rotate the configuration.
+    const start = Math.random() * 360;
+    const degToRad = Math.PI / 180;
+
+    return {
+        angle1: (start) * degToRad,
+        angle2: ((start + gaps[0]!) % 360) * degToRad,
+        angle3: ((start + gaps[0]! + gaps[1]!) % 360) * degToRad
+    };
+};
+
+export const drawRandomBoxY = () => {
+
+    const boxCenter = getRandomSafeCanvasPoint();
+    const { angle1, angle2, angle3 } = generateAngles();
+
+    drawLine(boxCenter, angle1, Math.random() * 270 + 30);
+    drawLine(boxCenter, angle2, Math.random() * 270 + 30);
+    drawLine(boxCenter, angle3, Math.random() * 270 + 30);
+};
 
 
 // Renderer Lifecycle Functions  
