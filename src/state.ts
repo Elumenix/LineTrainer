@@ -8,8 +8,13 @@ export type PracticeMode =
     | "Line"
     | "Box";
 
+export type YMode = 
+    | "Random" 
+    | "Balanced";
+
 export let currentState: CanvasState = "start";
 export let currentMode: PracticeMode = "Box";
+export let currentYMode: YMode = "Balanced"
 
 export const setState = (newState: CanvasState) => {
     currentState = newState;

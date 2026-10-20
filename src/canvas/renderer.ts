@@ -1,26 +1,32 @@
-import { currentState, setState } from "../state";
+import { currentState, setState, currentYMode } from "../state";
 
 // Types
-export interface Point {
+export type Point = {
     x: number;
     y: number;
 }
 
-export interface LineConfig {
+export type LineConfig = {
     type: "line";
     p1: Point;
     p2: Point;
     p3: Point;
 }
 
-export interface CircleConfig {
+export type CircleConfig = {
     type: "circle";
     center: Point;
     radius: number;
     color: string;
 }
 
-export interface View {
+type Angles = {
+    angle1: number;
+    angle2: number;
+    angle3: number;
+};
+
+export type View = {
     ctx: CanvasRenderingContext2D;
     w: number;
     h: number;
@@ -77,7 +83,7 @@ const createCircle = (pos: Point): CircleConfig => {
     return circle;
 }
 
-export const createLine = (startLocation: Point | CircleConfig, angle?: number, length?: number): LineConfig => {
+const createLine = (startLocation: Point | CircleConfig, angle?: number, length?: number): LineConfig => {
     const { w, h } = view;
     const startPoint: Point = "type" in startLocation ? startLocation.center : startLocation;
 
@@ -163,6 +169,67 @@ const createRandomLine = (startLocation: Point | CircleConfig): LineConfig => {
     };
 }
 
+const generateAngles = (): Angles => {
+    let extraGaps: number[];
+
+    if (currentYMode === "Random") {
+        // This version of the function provides a linear descending distribution
+        // This ends up having the generated boxes have some extreme angles
+        // There will be a minimum of 90 degrees between each of the arms of the box
+
+        // Uniformly distribute two cuts across 90 degrees.
+        const cuts = [
+            Math.random() * 90,
+            Math.random() * 90
+        ].sort((a, b) => a - b);
+
+        extraGaps = [
+            cuts[0]!,
+            cuts[1]! - cuts[0]!,
+            90 - cuts[1]!
+        ];
+    }
+    else {
+        // This version of the function provides a right skewed bell curve for each angle, centered on ~112, with a range of 90-180
+        // This ends up having the generated boxes be much more cube shaped than completely random
+        // There will be a minimum of 90 degrees between each of the arms of the box
+
+        // Generate Gamma-distributed weights (shape = 2).
+        const randomWeight = (): number =>
+            -Math.log(Math.random()) - Math.log(Math.random());
+
+        const weights = [
+            randomWeight(),
+            randomWeight(),
+            randomWeight()
+        ];
+
+        const total = weights.reduce(
+            (sum, weight) => sum + weight,
+            0
+        );
+
+        extraGaps = weights.map(
+            weight => (90 * weight) / total
+        );
+    }
+
+    // Every gap has a minimum of 90 degrees.
+    const gaps = extraGaps.map(gap => gap + 90);
+
+    /// Randomly rotate the triangle so all placements are possible
+    const start = Math.random() * 360;
+    const degToRad = Math.PI / 180;
+
+    return {
+        angle1: (start) * degToRad,
+        angle2: ((start + gaps[0]!) % 360) * degToRad,
+        angle3: ((start + gaps[0]! + gaps[1]!) % 360) * degToRad
+    }
+}
+
+
+
 
 // Draw Request Functions
 export const drawCircle = (
@@ -200,87 +267,6 @@ export const drawRandomLine = (startLocation?: Point | CircleConfig) => {
     requestRender();
     return line;
 }
-
-/*export const drawRandomBoxY = () => {
-    const boxCenter = getRandomSafeCanvasPoint();
-
-    const angle1 = Math.random() * 180;
-    const angle2 = Math.random() * (270 - 90 - angle1) + angle1 + 90;
-    const angle3 = Math.random() * (360 - 90 - angle2 - (angle1 < 90 ? (90 - angle1) : 0)) + angle2 + 90;
-
-}*/
-
-type DrawRandomBoxYResult = {
-    run: number;
-    centerX: number;
-    centerY: number;
-    angle1: number;
-    angle2: number;
-    angle3: number;
-};
-
-
-type Angles = {
-    angle1: number;
-    angle2: number;
-    angle3: number;
-};
-
-/*export const generateAngles = (): Angles => {
-    // Split the remaining 90 degrees randomly among the three gaps.
-    const cuts = [
-        Math.random() * 90,
-        Math.random() * 90
-    ].sort((a, b) => a - b);
-
-    const extraGaps = [
-        cuts[0],
-        cuts[1]! - cuts[0]!,
-        90 - cuts[1]!
-    ];
-
-    const gaps = extraGaps.map(gap => gap! + 90);
-
-    // Randomly rotate the entire configuration.
-    const start = Math.random() * 360;
-
-    return {
-        angle1: start,
-        angle2: (start + gaps[0]!) % 360,
-        angle3: (start + gaps[0]! + gaps[1]!) % 360
-    };
-};*/
-
-
-export const generateAngles = (): Angles => {
-    // Generate three positive random weights.
-    // Each weight is the sum of two exponential random variables.
-    const randomWeight = (): number =>
-        -Math.log(Math.random()) - Math.log(Math.random());
-
-    const weights = [
-        randomWeight(),
-        randomWeight(),
-        randomWeight()
-    ];
-
-    const total = weights.reduce((sum, weight) => sum + weight, 0);
-
-    // Distribute the extra 90 degrees proportionally.
-    const gaps = weights.map(
-        weight => 90 + (90 * weight) / total
-    );
-
-    // Randomly rotate the configuration.
-    const start = Math.random() * 360;
-    const degToRad = Math.PI / 180;
-
-    return {
-        angle1: (start) * degToRad,
-        angle2: ((start + gaps[0]!) % 360) * degToRad,
-        angle3: ((start + gaps[0]! + gaps[1]!) % 360) * degToRad
-    };
-};
 
 export const drawRandomBoxY = () => {
 
