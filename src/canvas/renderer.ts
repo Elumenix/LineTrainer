@@ -1,4 +1,4 @@
-import { currentState, setState, currentYMode } from "../state";
+import { currentState, setState, currentMode, currentYMode, checkEdge, trackEdge } from "../state";
 
 // Types
 export type Point = {
@@ -247,6 +247,84 @@ export const drawCircle = (
     return circle;
 }
 
+export const drawBoxCorner = (x: number, y: number) => {
+    if (currentMode != "Box") {
+        throw new Error("Not the right mode to guarantee this is appropriate.");
+    }
+
+    // In box mode, the first line will be a part of the y, so this is correct
+    let index = drawQueue.findIndex(obj => obj.type = "line");
+    const yLine1 = drawQueue[index] as LineConfig;
+    const yLine2 = drawQueue[index] as LineConfig;
+    const yLine3 = drawQueue[index] as LineConfig;
+
+
+    const dist1 = Math.sqrt(Math.pow(yLine1.p2.x - x, 2) + Math.pow(yLine1.p2.y - y, 2));
+    const dist2 = Math.sqrt(Math.pow(yLine2.p2.x - x, 2) + Math.pow(yLine2.p2.y - y, 2));
+    const dist3 = Math.sqrt(Math.pow(yLine3.p2.x - x, 2) + Math.pow(yLine3.p2.y - y, 2));
+
+    // temp code for finding the nearest undrawn edge to a point.
+    // don't thing this actually draws the line yet and I might need to create a new line function for this to work
+    if (dist1 <= dist2 && dist1 <= dist3) {
+        if (dist2 <= dist3 && !checkEdge(0, 1)) {
+            createLine(yLine1.p2, { x, y });
+            createLine(yLine2.p2, { x, y });
+            trackEdge(0, 1);
+        }
+        else if (!checkEdge(0, 2)) {
+            createLine(yLine1.p2, { x, y });
+            createLine(yLine3.p1, { x, y });
+            trackEdge(0, 2);
+        }
+        else {
+            createLine(yLine2.p2, { x, y });
+            createLine(yLine3.p3, { x, y });
+            trackEdge(1, 2);
+        }
+    }
+    else if (dist2 <= dist3) {
+        if (dist1 <= dist3 && !checkEdge(0, 1)) {
+            createLine(yLine1.p2, { x, y });
+            createLine(yLine2.p2, { x, y });
+            trackEdge(0, 1);
+        }
+        else if (!checkEdge(1, 2)) {
+            createLine(yLine2.p2, { x, y });
+            createLine(yLine3.p3, { x, y });
+            trackEdge(1, 2);
+        }
+        else {
+            createLine(yLine1.p2, { x, y });
+            createLine(yLine3.p1, { x, y });
+            trackEdge(0, 2);
+        }
+    }
+    else {
+        if (dist1 <= dist2 && !checkEdge(0, 2)) {
+            createLine(yLine1.p2, { x, y });
+            createLine(yLine3.p1, { x, y });
+            trackEdge(0, 2);
+        }
+        else if (!checkEdge(1, 2)) {
+            createLine(yLine2.p2, { x, y });
+            createLine(yLine3.p3, { x, y });
+            trackEdge(1, 2);
+        }
+        else {
+            createLine(yLine1.p2, { x, y });
+            createLine(yLine2.p2, { x, y });
+            trackEdge(0, 1);
+        }
+    }
+
+
+    // Didn't touch anything below this
+    const circle: CircleConfig = createCircle(pos);
+    drawQueue.push(circle);
+    requestRender();
+    return circle;
+}
+
 export const drawRandomCircle = () => {
     return drawCircle(getRandomSafeCanvasPoint());
 }
@@ -277,7 +355,7 @@ export const drawRandomBoxY = () => {
     // The boxes center should be somewhere in the middle of the graph to give more room to expand the arms
     // This also prevents the web worker from potentially freezing if the center gets placed too close to the edge of the graph
     while (boxCenter.x < w / 4 || boxCenter.x > w * 3 / 4 || boxCenter.y < h / 4 || boxCenter.y > h * 3 / 4) {
-        boxCenter = getRandomSafeCanvasPoint(); 
+        boxCenter = getRandomSafeCanvasPoint();
     }
 
     for (let i = 0; i < 3; i++) {
