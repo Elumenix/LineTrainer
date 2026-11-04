@@ -270,12 +270,31 @@ export const drawRandomLine = (startLocation?: Point | CircleConfig) => {
 
 export const drawRandomBoxY = () => {
 
-    const boxCenter = getRandomSafeCanvasPoint();
     const { angle1, angle2, angle3 } = generateAngles();
+    const { w, h } = view;
+    let boxCenter = getRandomSafeCanvasPoint();
 
-    drawLine(boxCenter, angle1, Math.random() * 270 + 30);
-    drawLine(boxCenter, angle2, Math.random() * 270 + 30);
-    drawLine(boxCenter, angle3, Math.random() * 270 + 30);
+    // The boxes center should be somewhere in the middle of the graph to give more room to expand the arms
+    // This also prevents the web worker from potentially freezing if the center gets placed too close to the edge of the graph
+    while (boxCenter.x < w / 4 || boxCenter.x > w * 3 / 4 || boxCenter.y < h / 4 || boxCenter.y > h * 3 / 4) {
+        boxCenter = getRandomSafeCanvasPoint(); 
+    }
+
+    for (let i = 0; i < 3; i++) {
+        const angle = i === 0 ? angle1 : i === 1 ? angle2 : angle3;
+        const length = Math.random() * 270 + 30;
+        const line = createLine(boxCenter, angle, length);
+
+        // Needs the be in poinds on the canvas so that the user can actually see the points
+        if (line.p2.x < 10 || line.p2.x >= w - 10 || line.p2.y < 10 || line.p2.y >= h - 10) {
+            i--;
+        }
+        else {
+            drawQueue.push(line);
+        }
+    }
+
+    requestRender();
 };
 
 
