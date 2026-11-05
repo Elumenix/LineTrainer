@@ -83,16 +83,31 @@ const createCircle = (pos: Point): CircleConfig => {
     return circle;
 }
 
-const createLine = (startLocation: Point | CircleConfig, angle?: number, length?: number): LineConfig => {
+const createLine = (startLocation: Point | CircleConfig, endLocation?: Point, angle?: number, length?: number): LineConfig => {
     const { w, h } = view;
     const startPoint: Point = "type" in startLocation ? startLocation.center : startLocation;
-
-    // Helpers
     const { x: px, y: py } = startPoint;
-    const dx = Math.cos(angle ?? 0);
-    const dy = Math.sin(angle ?? 0);
-    const lineLength = length ?? 30; // Default length is 30
 
+    // Calculate direction and length
+    let dx: number;
+    let dy: number;
+    let lineLength: number;
+
+    // If the endpoint was passed in, we can get angle and length info directly from it, otherwise it's we'll use the passed in / default values
+    if (endLocation) {
+        const deltaX = endLocation!.x - px;
+        const deltaY = endLocation!.y - py;
+
+        lineLength = Math.sqrt(deltaX ** 2 + deltaY ** 2);
+        dx = deltaX / lineLength;
+        dy = deltaY / lineLength;
+    }
+    else {
+        // This is expected to be passed in if this branch was called, but there are safety values
+        dx = Math.cos(angle ?? 0);
+        dy = Math.sin(angle ?? 0);
+        lineLength = length ?? 30; // Default length is 30
+    }
 
     // Essentially figuring out what edge of the canvas this line would hit if fully extended
     // Then we can calculate that exact point, so we can reuse it later in the output
@@ -248,81 +263,39 @@ export const drawCircle = (
 }
 
 export const drawBoxCorner = (x: number, y: number) => {
-    if (currentMode != "Box") {
+    if (currentMode !== "Box") {
         throw new Error("Not the right mode to guarantee this is appropriate.");
     }
 
     // In box mode, the first line will be a part of the y, so this is correct
-    let index = drawQueue.findIndex(obj => obj.type = "line");
-    const yLine1 = drawQueue[index] as LineConfig;
-    const yLine2 = drawQueue[index] as LineConfig;
-    const yLine3 = drawQueue[index] as LineConfig;
-
-
-    const dist1 = Math.sqrt(Math.pow(yLine1.p2.x - x, 2) + Math.pow(yLine1.p2.y - y, 2));
-    const dist2 = Math.sqrt(Math.pow(yLine2.p2.x - x, 2) + Math.pow(yLine2.p2.y - y, 2));
-    const dist3 = Math.sqrt(Math.pow(yLine3.p2.x - x, 2) + Math.pow(yLine3.p2.y - y, 2));
-
-    // temp code for finding the nearest undrawn edge to a point.
-    // don't thing this actually draws the line yet and I might need to create a new line function for this to work
-    if (dist1 <= dist2 && dist1 <= dist3) {
-        if (dist2 <= dist3 && !checkEdge(0, 1)) {
-            createLine(yLine1.p2, { x, y });
-            createLine(yLine2.p2, { x, y });
-            trackEdge(0, 1);
-        }
-        else if (!checkEdge(0, 2)) {
-            createLine(yLine1.p2, { x, y });
-            createLine(yLine3.p1, { x, y });
-            trackEdge(0, 2);
-        }
-        else {
-            createLine(yLine2.p2, { x, y });
-            createLine(yLine3.p3, { x, y });
-            trackEdge(1, 2);
-        }
-    }
-    else if (dist2 <= dist3) {
-        if (dist1 <= dist3 && !checkEdge(0, 1)) {
-            createLine(yLine1.p2, { x, y });
-            createLine(yLine2.p2, { x, y });
-            trackEdge(0, 1);
-        }
-        else if (!checkEdge(1, 2)) {
-            createLine(yLine2.p2, { x, y });
-            createLine(yLine3.p3, { x, y });
-            trackEdge(1, 2);
-        }
-        else {
-            createLine(yLine1.p2, { x, y });
-            createLine(yLine3.p1, { x, y });
-            trackEdge(0, 2);
-        }
-    }
-    else {
-        if (dist1 <= dist2 && !checkEdge(0, 2)) {
-            createLine(yLine1.p2, { x, y });
-            createLine(yLine3.p1, { x, y });
-            trackEdge(0, 2);
-        }
-        else if (!checkEdge(1, 2)) {
-            createLine(yLine2.p2, { x, y });
-            createLine(yLine3.p3, { x, y });
-            trackEdge(1, 2);
-        }
-        else {
-            createLine(yLine1.p2, { x, y });
-            createLine(yLine2.p2, { x, y });
-            trackEdge(0, 1);
-        }
+    const lines = drawQueue.filter((obj): obj is LineConfig => obj.type === "line").slice(0, 3);
+    if (lines.length !== 3) {
+        // This shouldn't be a problem, but just in case
+        throw new Error("The lines that should make up the Y are not present.")
     }
 
+    const distance = lines.map(line => Math.hypot(line.p2.x - x, line.p2.y - y));
+    const candidates = [
+        { edge: [0, 1], a: lines[0]?.p2, b: lines[1]?.p2, priority: (distance[0] ?? Infinity) + (distance[1] ?? Infinity) },
+        { edge: [0, 2], a: lines[0]?.p2, b: lines[2]?.p2, priority: (distance[0] ?? Infinity) + (distance[2] ?? Infinity) },
+        { edge: [1, 2], a: lines[1]?.p2, b: lines[2]?.p2, priority: (distance[1] ?? Infinity) + (distance[2] ?? Infinity) }
+    ];
+    candidates.sort((a, b) => a.priority - b.priority);
 
-    // Didn't touch anything below this
-    const circle: CircleConfig = createCircle(pos);
-    drawQueue.push(circle);
+    for (let i = 0; i < 3; i++) {
+        console.log(candidates[i]?.priority);
+    }
+
+    // Essentially, this point is treated as the corner of the two ends of the y it is closest to, skipping ones where edges are already defined
+    const selected = candidates.find(candidate => !checkEdge(candidate.edge[0] ?? Infinity, candidate.edge[1] ?? Infinity));
+
+    // An error will likely be thrown before this point if this ever happens
+    if (!selected) return;
+
+    drawQueue.push(createLine(selected.a as Point, { x, y }));
+    drawQueue.push(createLine(selected.b as Point, { x, y }));
+    trackEdge(selected.edge[0] ?? Infinity, selected.edge[1] ?? Infinity);
     requestRender();
-    return circle;
 }
 
 export const drawRandomCircle = () => {
@@ -331,7 +304,7 @@ export const drawRandomCircle = () => {
 
 export const drawLine = (startLocation: Point | CircleConfig, angle: number, length: number) => {
 
-    const line = createLine(startLocation, angle, length);
+    const line = createLine(startLocation, undefined, angle, length);
     drawQueue.push(line);
     requestRender();
     return line;
@@ -361,7 +334,7 @@ export const drawRandomBoxY = () => {
     for (let i = 0; i < 3; i++) {
         const angle = i === 0 ? angle1 : i === 1 ? angle2 : angle3;
         const length = Math.random() * 270 + 30;
-        const line = createLine(boxCenter, angle, length);
+        const line = createLine(boxCenter, undefined, angle, length);
 
         // Needs the be in poinds on the canvas so that the user can actually see the points
         if (line.p2.x < 10 || line.p2.x >= w - 10 || line.p2.y < 10 || line.p2.y >= h - 10) {
@@ -405,6 +378,9 @@ const render = () => {
     const { ctx } = view;
     drawAxes();
 
+    // Counter that is important for box mode
+    let lineCount = 0;
+
     for (const obj of drawQueue) {
         if (obj.type === "circle") {
             const circle: CircleConfig = obj as CircleConfig;
@@ -418,17 +394,17 @@ const render = () => {
 
         if (obj.type === "line") {
             const line: LineConfig = obj as LineConfig;
+            lineCount++;
 
-            // Step 1: Draw the start and target points
-            ctx.beginPath();
-            ctx.arc(line.p1.x, line.p1.y, 5, 0, Math.PI * 2);
-            ctx.fillStyle = "blue";
-            ctx.fill();
+            // Step 1: Draw lines to show the current edges of the box
+            ctx.strokeStyle = "red";
+            ctx.lineWidth = 2;
 
             ctx.beginPath();
-            ctx.arc(line.p2.x, line.p2.y, 4, 0, Math.PI * 2);
-            ctx.fillStyle = "purple";
-            ctx.fill();
+            ctx.moveTo(line.p1.x, line.p1.y);
+            ctx.lineTo(line.p2.x, line.p2.y);
+            ctx.stroke();
+
 
             // Step 2: Draw the result line
             if (currentState === "result") {
@@ -436,7 +412,7 @@ const render = () => {
                 ctx.lineWidth = 2;
 
                 ctx.beginPath();
-                ctx.moveTo(line.p1.x, line.p1.y);
+                ctx.moveTo(line.p2.x, line.p2.y);
                 ctx.lineTo(line.p3.x, line.p3.y);
                 ctx.stroke();
             }

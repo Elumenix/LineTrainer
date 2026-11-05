@@ -1,4 +1,4 @@
-import { drawCircle } from "../canvas/renderer";
+import { drawCircle, drawBoxCorner } from "../canvas/renderer";
 import type { CircleConfig, Point } from "../canvas/renderer";
 import { currentMode, currentState, setState } from "../state";
 
@@ -8,9 +8,9 @@ function* clickHandler(canvas: HTMLCanvasElement): Generator<void, void, Pointer
     const rect = canvas.getBoundingClientRect();
 
     if (currentMode === "Box") {
-        for (let i = 0; i < 4; i++) {
+        for (let i = 0; i < 3; i++) {
             const event = yield;
-            drawCircle(
+            drawBoxCorner(
                 event.clientX - rect.left,
                 event.clientY - rect.top
             );
@@ -28,11 +28,16 @@ function* clickHandler(canvas: HTMLCanvasElement): Generator<void, void, Pointer
     setState("result");
 }
 
-
 export const setupMouse = (canvas: HTMLCanvasElement) => {
     let handler = clickHandler(canvas);
-    handler.next(); // Get to first yield
 
+    const reset = () => {
+        handler.return(undefined);
+        handler = clickHandler(canvas);
+        handler.next();
+    };
+
+    handler.next(); // Get to first yield
     canvas.addEventListener("click", (event) => {
         if (currentState !== "input") return; // Pretty clear, really 
 
@@ -43,4 +48,6 @@ export const setupMouse = (canvas: HTMLCanvasElement) => {
             handler.next(); // Get to first yield
         }
     });
+
+    return { reset };
 }
