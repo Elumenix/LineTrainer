@@ -8,7 +8,7 @@ function* clickHandler(canvas: HTMLCanvasElement): Generator<void, void, Pointer
     const rect = canvas.getBoundingClientRect();
 
     if (currentMode === "Box") {
-        for (let i = 0; i < 3; i++) {
+        for (let i = 0; i < 4; i++) {
             const event = yield;
             drawBoxCorner(
                 event.clientX - rect.left,

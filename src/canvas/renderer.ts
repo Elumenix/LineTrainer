@@ -274,27 +274,91 @@ export const drawBoxCorner = (x: number, y: number) => {
         throw new Error("The lines that should make up the Y are not present.")
     }
 
-    const distance = lines.map(line => Math.hypot(line.p2.x - x, line.p2.y - y));
-    const candidates = [
-        { edge: [0, 1], a: lines[0]?.p2, b: lines[1]?.p2, priority: (distance[0] ?? Infinity) + (distance[1] ?? Infinity) },
-        { edge: [0, 2], a: lines[0]?.p2, b: lines[2]?.p2, priority: (distance[0] ?? Infinity) + (distance[2] ?? Infinity) },
-        { edge: [1, 2], a: lines[1]?.p2, b: lines[2]?.p2, priority: (distance[1] ?? Infinity) + (distance[2] ?? Infinity) }
-    ];
-    candidates.sort((a, b) => a.priority - b.priority);
+    const origin = lines[0]!.p1;
+    const inputAngle = Math.atan2(
+        y - origin.y,
+        x - origin.x
+    );
 
-    for (let i = 0; i < 3; i++) {
-        console.log(candidates[i]?.priority);
+    // Make it range from 0 to 2Pi
+    const normalize = (angle: number) => ((angle % (Math.PI * 2)) + Math.PI * 2) % (Math.PI * 2);
+    const targetAngle = normalize(Math.atan2(y - origin.y, x - origin.x));
+
+    // Sort lines by their angle
+    const sorted = lines.map((line, index) => ({
+        line,
+        index,
+        angle: Math.atan2(
+            line.p2.y - origin.y,
+            line.p2.x - origin.x
+        )
+    })).sort((a, b) => a.angle - b.angle);
+
+
+
+    // Generate all three edges
+    const candidates = sorted.map((current, i) => {
+        const next = sorted[(i + 1) % sorted.length];
+
+        const start = current.angle;
+        const end = next!.angle;
+
+        const sectorWidth = normalize(next!.angle - current.angle);
+        const relativeAngle = normalize(targetAngle - current.angle);
+        const containsAngle = relativeAngle <= sectorWidth;
+
+        const angularDistance = containsAngle ? 0 : Math.min(normalize(start - targetAngle), normalize(targetAngle - end));
+
+        const edge: [number, number] = [current.index, next!.index];
+
+        return {
+            edge,
+            a: current.line.p2,
+            b: next!.line.p2,
+            containsAngle,
+            angularDistance,
+            occupied: checkEdge(edge[0], edge[1])
+        };
+    });
+
+    // Bring whichever two lines are on either side of the input angle
+    candidates.sort((a, b) => a.angularDistance - b.angularDistance);
+
+    // Take the first edge that wasn't already drawn, if one exists
+    const selectedEdge = candidates.find(candidate => !candidate.occupied);
+
+
+
+    if (!selectedEdge) {
+        // If no corner can be selected, that means that this was the back corner, so all chosen points will draw to the back corner
+
+        // Track a set of points (box corners) and add the ones that are a part of the Y
+        const seen: Set<Point> = new Set();
+        seen.add({ x, y }); // To prevent points we add from firing
+        for (const line of lines) {
+            seen.add(line.p2);
+        }
+
+        drawQueue.filter((edge): edge is LineConfig => {
+            if (edge.type === "line") {
+
+                // If this point is already seen, skip it
+                if (seen.has(edge.p2)) return false;
+
+                seen.add(edge.p2);
+                drawQueue.push(createLine(edge.p2, { x, y }));
+                return true;
+            }
+            return false;
+        });
+    }
+    else {
+        // Create the corner as normal
+        drawQueue.push(createLine(selectedEdge.a as Point, { x, y }));
+        drawQueue.push(createLine(selectedEdge.b as Point, { x, y }));
+        trackEdge(selectedEdge.edge[0] ?? Infinity, selectedEdge.edge[1] ?? Infinity);
     }
 
-    // Essentially, this point is treated as the corner of the two ends of the y it is closest to, skipping ones where edges are already defined
-    const selected = candidates.find(candidate => !checkEdge(candidate.edge[0] ?? Infinity, candidate.edge[1] ?? Infinity));
-
-    // An error will likely be thrown before this point if this ever happens
-    if (!selected) return;
-
-    drawQueue.push(createLine(selected.a as Point, { x, y }));
-    drawQueue.push(createLine(selected.b as Point, { x, y }));
-    trackEdge(selected.edge[0] ?? Infinity, selected.edge[1] ?? Infinity);
     requestRender();
 }
 
@@ -398,7 +462,7 @@ const render = () => {
 
             // Step 1: Draw lines to show the current edges of the box
             ctx.strokeStyle = "red";
-            ctx.lineWidth = 2;
+            ctx.lineWidth = 3;
 
             ctx.beginPath();
             ctx.moveTo(line.p1.x, line.p1.y);
@@ -406,10 +470,10 @@ const render = () => {
             ctx.stroke();
 
 
-            // Step 2: Draw the result line
+            // Step 2: Draw the line extensions
             if (currentState === "result") {
                 ctx.strokeStyle = "blue";
-                ctx.lineWidth = 2;
+                ctx.lineWidth = 1;
 
                 ctx.beginPath();
                 ctx.moveTo(line.p2.x, line.p2.y);
