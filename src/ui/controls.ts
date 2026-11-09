@@ -1,6 +1,6 @@
 // Will handle html elements on the page, such as buttons and checkboxes
-import { drawRandomBoxY, clearScene } from "../canvas/renderer";
-import { currentMode, setState } from "../state";
+import { drawRandomLine, drawRandomBoxY, clearScene } from "../canvas/renderer";
+import { currentMode, setState, setMode } from "../state";
 import { setupMouse } from "../input/mouse";
 
 export const initUI = (callback: (canvas: HTMLCanvasElement) => void) => {
@@ -10,6 +10,7 @@ export const initUI = (callback: (canvas: HTMLCanvasElement) => void) => {
     // Set up mouse behavior so we can cancel inputs early
     const mouse = setupMouse(canvas);
 
+    // Make generate button reset draw logic and initiate progress tracking and mouse input
     const generateButton = document.getElementById("generateButton") as HTMLButtonElement;
     generateButton.addEventListener('click', () => {
         setState("start");
@@ -18,10 +19,32 @@ export const initUI = (callback: (canvas: HTMLCanvasElement) => void) => {
         clearScene();
 
         // Depending on the mode, we either draw 1 line, or the 3 needed for a cube
-        //drawRandomLine();
-        drawRandomBoxY();
-        mouse.reset();
+        if (currentMode === "Line") {
+            drawRandomLine();
+        }
+        else {
+            drawRandomBoxY();
+        }
 
+        // We need new canvas inputs now, so we reset the mouse
+        mouse.reset();
         setState("input");
+    });
+
+    const renderModeToggle = document.getElementById("renderMode") as HTMLInputElement
+    renderModeToggle.addEventListener('change', (event: Event) => {
+        const target = event.target as HTMLInputElement;
+
+        if (target.checked) {
+            setMode("Box");
+        }
+        else {
+            setMode("Line");
+        }
+
+        // Clear the canvas to visually convey to the user that things have changed
+        // Setting state to start means that mouse input on it will no longer affect background logic until generating
+        clearScene();
+        setState("start");
     });
 }

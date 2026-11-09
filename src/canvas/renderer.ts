@@ -442,9 +442,6 @@ const render = () => {
     const { ctx } = view;
     drawAxes();
 
-    // Counter that is important for box mode
-    let lineCount = 0;
-
     for (const obj of drawQueue) {
         if (obj.type === "circle") {
             const circle: CircleConfig = obj as CircleConfig;
@@ -458,7 +455,6 @@ const render = () => {
 
         if (obj.type === "line") {
             const line: LineConfig = obj as LineConfig;
-            lineCount++;
 
             // Step 1: Draw lines to show the current edges of the box
             ctx.strokeStyle = "red";
@@ -469,6 +465,20 @@ const render = () => {
             ctx.lineTo(line.p2.x, line.p2.y);
             ctx.stroke();
 
+            // Step 1.5: If in line mode, draw the actual points on the line to help signify direction
+            if (currentMode === "Line") {
+                // Start point
+                ctx.beginPath();
+                ctx.arc(line.p1.x, line.p1.y, 5, 0, Math.PI * 2);
+                ctx.fillStyle = "red";
+                ctx.fill();
+
+                // End of sample line
+                ctx.beginPath();
+                ctx.arc(line.p2.x, line.p2.y, 2, 0, Math.PI * 2);
+                ctx.fillStyle = "purple";
+                ctx.fill();
+            }
 
             // Step 2: Draw the line extensions
             if (currentState === "result") {

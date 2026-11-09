@@ -12,7 +12,17 @@
     <div id="container">
         <canvas id="vectorCanvas"></canvas>
     </div>
-    <button id="generateButton" data-mode="draw">Generate</button>
+    <div id="options">  
+        <button id="generateButton" data-mode="draw">Generate</button>
+        <label class="toggle-container">
+            <span class="label-text label-left">Line Mode</span>
+            
+            <input type="checkbox" class="toggle-input" id="renderMode" checked>
+            <span class="toggle-track"></span>
+            
+            <span class="label-text label-right">Box Mode</span>
+        </label>
+    </div>
     <script type="module" src="src/main.ts"></script>
 </body>
 

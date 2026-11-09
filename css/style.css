@@ -42,3 +42,87 @@ body {
 #generateButton:hover {
     background-color: rgb(70, 70, 220);
 }
+
+#options {
+    width: 98vw;
+    display: inline-flex;
+    justify-content: space-between;
+}
+
+/* Container layout */
+.toggle-container {
+    display: inline-flex;
+    align-items: center;
+    gap: 12px;
+    font-family: system-ui, sans-serif;
+    cursor: pointer;
+    user-select: none;
+}
+
+/* Hide the default checkbox completely */
+.toggle-input {
+    position: absolute;
+    opacity: 0;
+    width: 0;
+    height: 0;
+}
+
+/* The visual switch background track */
+.toggle-track {
+    position: relative;
+    display: inline-block;
+    width: 50px;
+    height: 26px;
+    background-color: #ccc;
+    border-radius: 99px;
+    transition: background-color 0.3s ease;
+}
+
+/* The visual sliding thumb */
+.toggle-track::after {
+    content: "";
+    position: absolute;
+    top: 3px;
+    left: 3px;
+    width: 20px;
+    height: 20px;
+    background-color: white;
+    border-radius: 50%;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+    transition: transform 0.3s ease;
+}
+
+/* Active State (Checked) - Track turns blue */
+.toggle-input:checked+.toggle-track {
+    background-color: #2196F3;
+}
+
+/* Active State (Checked) - Thumb slides right */
+.toggle-input:checked+.toggle-track::after {
+    transform: translateX(24px);
+}
+
+/* Focus styling for accessibility */
+.toggle-input:focus-visible+.toggle-track {
+    outline: 2px solid #2196F3;
+    outline-offset: 2px;
+}
+
+/* Dynamic text label highlighting */
+.label-text {
+    color: #888;
+    font-weight: 500;
+    transition: color 0.3s ease;
+}
+
+/* Highlight Left Label when NOT checked */
+.toggle-container:has(.toggle-input:not(:checked)) .label-left {
+    color: #333;
+    font-weight: bold;
+}
+
+/* Highlight Right Label when IS checked */
+.toggle-container:has(.toggle-input:checked) .label-right {
+    color: #333;
+    font-weight: bold;
+}
