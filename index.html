@@ -12,14 +12,27 @@
     <div id="container">
         <canvas id="vectorCanvas"></canvas>
     </div>
-    <div id="options">  
+    <div id="options">
         <button id="generateButton" data-mode="draw">Generate</button>
+
+        <div class="github-container">
+            <a class="github-brand" href="https://github.com/Elumenix/LineTrainer" target="_blank"
+                rel="noopener noreferrer">
+
+                <svg class="github-icon" viewBox="0 0 24 24" aria-hidden="true" fill="currentColor">
+                    <path
+                        d="M12 .5C5.65.5.5 5.65.5 12c0 5.1 3.3 9.4 7.9 10.95.6.1.8-.25.8-.55v-2.1c-3.2.7-3.9-1.35-3.9-1.35-.55-1.35-1.3-1.7-1.3-1.7-1.05-.7.1-.7.1-.7 1.15.1 1.75 1.2 1.75 1.2 1.05 1.75 2.75 1.25 3.4.95.1-.75.4-1.25.7-1.55-2.55-.3-5.25-1.3-5.25-5.7 0-1.25.45-2.25 1.2-3.05-.1-.3-.5-1.45.1-3.05 0 0 1-.3 3.2 1.2a11.1 11.1 0 0 1 5.8 0c2.2-1.5 3.2-1.2 3.2-1.2.6 1.6.2 2.75.1 3.05.75.8 1.2 1.8 1.2 3.05 0 4.4-2.7 5.4-5.3 5.7.4.35.75 1 .75 2v2.95c0 .3.2.65.8.55A11.5 11.5 0 0 0 23.5 12C23.5 5.65 18.35.5 12 .5Z" />
+                </svg>
+
+            </a>
+        </div>
+
         <label class="toggle-container">
             <span class="label-text label-left">Line Mode</span>
-            
+
             <input type="checkbox" class="toggle-input" id="renderMode" checked>
             <span class="toggle-track"></span>
-            
+
             <span class="label-text label-right">Box Mode</span>
         </label>
     </div>
